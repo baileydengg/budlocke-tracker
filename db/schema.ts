@@ -1,4 +1,5 @@
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { relations } from "drizzle-orm";
 
 // Session Table
 export const sessions = sqliteTable("sessions", {
@@ -20,7 +21,30 @@ export const pairs = sqliteTable("pairs", {
 export const pokemons = sqliteTable("pokemons", {
   id: text("id").primaryKey(),
   pairId: text("pair_id").notNull().references(() => pairs.id, { onDelete: "cascade" }),
-  playerIndex: integer("player_index").notNull(), // 0 for Player 1, 1 for Player 2
+  playerIndex: integer("player_index").notNull(),
   species: text("species").notNull().default(""),
+  nickname: text("nickname").notNull().default(""), // <-- Added
+  types: text("types").notNull().default(""),       // <-- Added (e.g. "fire,flying")
   spriteUrl: text("sprite_url").notNull().default(""),
 });
+
+// --- RELATIONS DEFINITIONS ---
+
+export const sessionsRelations = relations(sessions, ({ many }) => ({
+  pairs: many(pairs),
+}));
+
+export const pairsRelations = relations(pairs, ({ one, many }) => ({
+  session: one(sessions, {
+    fields: [pairs.sessionId],
+    references: [sessions.id],
+  }),
+  pokemons: many(pokemons), // <-- This links 'pokemons' array to 'pairs'
+}));
+
+export const pokemonsRelations = relations(pokemons, ({ one }) => ({
+  pair: one(pairs, {
+    fields: [pokemons.pairId],
+    references: [pairs.id],
+  }),
+}));
